@@ -82,7 +82,7 @@ class Dui
 	public:
 		Dui(duiDATA* _currentPage) : currentPage(_currentPage){};
 		void begin(LiquidCrystal* _lcd,byte width,byte height);
-		void do();
+		void doit();
 	private:
 		duiDATA* currentPage;
 		LiquidCrystal* lcd;
@@ -93,7 +93,7 @@ class Dui
 		byte exec(byte btn); // Traite l'appui sur un bouton
 		void display(byte clearDisplay); // Affiche une page de l'interface utilisateur
 		void edit(byte btn);
-		char findObject(byte type,byte index)
+		char findObject(byte type,byte index);
 };
 
 #endif

@@ -40,8 +40,9 @@ void Dui::selectDisplay(byte on) // Affiche ou efface le curseur de sélection
 */
 }
 
-char Dui::findObject(byte type,byte index) // Recherche un objet similaire (x,y,type)
+char Dui::findObject(byte search,byte index) // Recherche un objet similaire (x,y,type)
 {
+//Serial.println("findObject");
 	struct _duiDATA *duiData = currentPage+index;
 	byte x=duiData->x;
 	byte y=duiData->y;
@@ -52,15 +53,15 @@ char Dui::findObject(byte type,byte index) // Recherche un objet similaire (x,y,
 	duiData = currentPage;
 	for(i=0; duiData->type; i++)
 	{
-		if((x==duiData->x)&&(y==duiData->y)&&(type==(duiData->type&~DUI_ACTIVE)))
+		if((x==duiData->x)&&(y==duiData->y)&&(duiData->text)&&(type==(duiData->type&~DUI_ACTIVE)))
 		{
-			switch(type)
+			switch(search)
 			{
 				case DUI_FIND_ACTIVE :
 					if(duiData->type&DUI_ACTIVE) return i;
 					break;
 				case DUI_FIND_PREV :
-					if(duiData->type&DUI_ACTIVE) return find;
+					if(duiData->type&DUI_ACTIVE) return find>=0?find:i;
 					break;
 				case DUI_FIND_NEXT :
 					if(findActive>=0) return i;
@@ -80,19 +81,31 @@ char Dui::findObject(byte type,byte index) // Recherche un objet similaire (x,y,
 
 void Dui::changeActive(byte action,byte index) // Change le texte actif d'un bouton
 {
-	Serial.println("changeActive");
+Serial.println("changeActive");
 	char obj=findObject(DUI_FIND_ACTIVE,index);	
 	if(obj<0) return; // Pas d'objet actif
 	char findObj=-1;
 	switch(action)
 	{
-		case DUI_PREV : findObj=findObject(DUI_FIND_PREV,obj); break;
-		case DUI_NEXT : findObj=findObject(DUI_FIND_NEXT,obj); break;
+		case DUI_PREV :
+			findObj=findObject(DUI_FIND_PREV,obj);
+Serial.println((byte)obj);
+Serial.println((byte)findObj);
+			if((findObj<0)||(findObj==obj)) findObj=findObject(DUI_FIND_LAST,obj);
+Serial.println((byte)findObj);
+			break;
+		case DUI_NEXT :
+			findObj=findObject(DUI_FIND_NEXT,obj);
+Serial.println((byte)obj);
+Serial.println((byte)findObj);
+			if(findObj==obj) findObj=findObject(DUI_FIND_FIRST,obj);
+Serial.println((byte)findObj);
+			break;
 	}
-	if(findObj>0)
+	if((findObj>=0)&&(findObj!=obj))
 	{
-		duiData[findObj].type|=DUI_ACTIVE;
-		duiData[obj].type&=~DUI_ACTIVE;
+		currentPage[findObj].type|=DUI_ACTIVE;
+		currentPage[obj].type&=~DUI_ACTIVE;
 	}
 }
 
@@ -158,7 +171,7 @@ byte Dui::exec(byte btn) // Traite l'appui sur un bouton
 	// Recherche un champ éditable en cours d'édition
 	for(i=0; duiData->type; i++)
 	{
-		if(duiData->type==DUI_EDIT|DUI_ACTIVE)
+		if(duiData->type==(DUI_EDIT|DUI_ACTIVE))
 		{
 			edit(btn);
 			return 0;
@@ -166,7 +179,8 @@ byte Dui::exec(byte btn) // Traite l'appui sur un bouton
 		duiData++;
 	}
 
-	// Recherche un bouton actif	
+	// Recherche un bouton actif
+	duiData = currentPage;
 	for(i=0; duiData->type; i++)
 	{
 		if((duiData->in&~DUI_ACTIVE)==btn)
@@ -189,7 +203,7 @@ byte Dui::exec(byte btn) // Traite l'appui sur un bouton
 
 void Dui::display(byte clearDisplay) // Affiche une page de l'interface utilisateur
 {
-  Serial.println("display");
+//  Serial.println("display");
   if(clearDisplay) lcd->clear();
   struct _duiDATA *duiData = currentPage;
   byte i,xx,yy,sel;
@@ -220,7 +234,7 @@ void Dui::begin(LiquidCrystal* _lcd,byte width,byte height) // Initialiseur
 	display(true);
 }
 
-void Dui::do() // Gestionnaire d'évènements
+void Dui::doit() // Gestionnaire d'évènements
 {
 	byte button=readButtons();
 	if(button)
