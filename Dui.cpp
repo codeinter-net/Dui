@@ -27,9 +27,10 @@ void Dui::selectDisplay(byte on)
 // type LIST : le texte est précédé d'une flèche ->
 // on : true = affiche ; false = efface
 {
+/*
 Serial.println("selectDisplay");
 	char i;
-	duiData = currentPage;
+	struct _duiDATA *duiData = currentPage;
 	for(i=0; duiData->type; i++)
 	{
 		byte type=duiData->type&~DUI_ACTIVE;
@@ -38,18 +39,19 @@ Serial.println("selectDisplay");
 			switch(duiData->type&~DUI_ACTIVE)
 			{
 				case DUI_SEL : // pour le type SEL : [...]
-					lcd.setCursor(duiData->x,duiData->y);
-					lcd.write(on?'[':' ');
-					lcd.setCursor(duiData->x+(duiData->text?strlen(duiData->text):0)+1, duiData->y);
-					lcd.write(on?']':' ');
+					lcd->setCursor(duiData->x,duiData->y);
+					lcd->write(on?'[':' ');
+					lcd->setCursor(duiData->x+(duiData->text?strlen(duiData->text):0)+1, duiData->y);
+					lcd->write(on?']':' ');
 					break;
 				case DUI_LIST :  // pour le type LIST : ->
-					lcd.setCursor(duiData->x,duiData->y);
-					lcd.write(on?126:' ');
+					lcd->setCursor(duiData->x,duiData->y);
+					lcd->write(on?126:' ');
 					break;
 			}
 		}
 	}
+*/
 }
 
 char Dui::findObject(byte search,byte index)
@@ -124,7 +126,7 @@ Serial.println("changeActive");
 	}
 }
 
-void Dui::callback(void (*call)(action, text),byte action, char* text)
+void Dui::callback(void (*call)(byte action, char* text),byte action, char* text)
 {
 	call(action, text);
 }
@@ -136,19 +138,20 @@ Serial.println("edit");
 	char sub=findObject(DUI_FIND_NEXT,obj); // infos complémentaires
 	byte dataLen=strlen(currentPage[obj].text);
 	byte formatLen=strlen(currentPage[sub].text);
-	callback(action,currentPage[obj].text);
+	byte size=dataLen;
+	if(currentPage[sub].out)
+		callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text);
 	switch(action)
 	{
-		case DUI_INIT :
+		case DUI_EDIT_INIT :
 			currentPage[obj].type|=DUI_ACTIVE;
-			size=dataLen;
 			if(size==formatLen) size--;
 			lcd->setCursor(currentPage[obj].x+size,currentPage[obj].y);
 			lcd->blink();
 			break;
-		case DUI_EVBTN :
+		case DUI_EDIT_BTN :
 			break;
-		case DUI_EXIT :
+		case DUI_EDIT_EXIT :
 			currentPage[obj].type&=~DUI_ACTIVE;
 			lcd->noBlink();
 			break;

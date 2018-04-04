@@ -98,9 +98,9 @@ class Dui
 		void changeActive(byte action,byte index); // Change le texte actif d'un bouton
 		byte exec(byte btn); // Traite l'appui sur un bouton
 		void display(byte clearDisplay); // Affiche une page de l'interface utilisateur
-		void edit(byte btn);
+		void edit(byte obj, byte action, byte btn);
 		char findObject(byte type,byte index);
-		void callback(void (*call)(action, text),byte action, char* text);
+		void callback(void (*call)(byte action, char* text),byte action, char* text);
 };
 
 #endif
