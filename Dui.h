@@ -4,7 +4,8 @@
 #ifndef Dui_h
 #define Dui_h
 
-#define MAX_EDIT_SIZE 16 // Taille maximum d'un champ éditable
+#define DUI_MAX_EDIT_SIZE 16 // Taille maximum d'un champ éditable
+#define DUI_BUTTONS_ANALOG_INPUT 0 // Entrée analogique où sont câblés les boutons
 
 #include "Arduino.h"
 #include <LiquidCrystal.h>
@@ -42,12 +43,13 @@
 #define DUI_CHANGE 13 // Champ qui change cycliquement
 #define DUI_BTN 14      // Bouton sélectionnable
 
-#define DUI_EDIT 30     // Champ éditable
+#define DUI_EDIT 30     // Champ éditable [EDIT,DATA,IN,0][EDIT,FORMAT,0,CALLBACK]
 #define DUI_NUM 31      // Valeur numérique
 #define DUI_ALPHA 32    // Valeur alphabétique
 #define DUI_ALPHANUM 33 // Valeur alphanumérique
 
 #define DUI_ACTIVE 128 // Champ actif
+#define DUI_POS 128 // Le champ IN contient une position
 
 // Evénements
 #define DUI_PREV 1 // Actions possibles
@@ -58,7 +60,11 @@
 #define DUI_RIGHT 4
 #define DUI_INIT 5 // Appelé en entrant
 #define DUI_EXIT 6 // Appelé en sortant
-#define DUI_OK 7 // Appelé en cas de validation
+#define DUI_OK 8 // Appelé en cas de validation
+#define DUI_EDIT_INIT 5
+#define DUI_EDIT_EXIT 6
+#define DUI_EDIT_BTN 7
+#define DUI_EDIT_OK 8
 
 // Critères de recherche
 #define DUI_FIND_ACTIVE 0
@@ -86,7 +92,7 @@ class Dui
 	private:
 		duiDATA* currentPage;
 		LiquidCrystal* lcd;
-		char editData[MAX_EDIT_SIZE+1]; // Buffer pour l'édition et l'affichage des champs éditables
+		char editData[DUI_MAX_EDIT_SIZE+1]; // Buffer pour l'édition et l'affichage des champs éditables
 		byte readButtons();  // Lecture des boutons
 		void selectDisplay(byte on); // Affiche ou efface le curseur de sélection
 		void changeActive(byte action,byte index); // Change le texte actif d'un bouton
@@ -94,6 +100,7 @@ class Dui
 		void display(byte clearDisplay); // Affiche une page de l'interface utilisateur
 		void edit(byte btn);
 		char findObject(byte type,byte index);
+		void callback(void (*call)(action, text),byte action, char* text);
 };
 
 #endif
