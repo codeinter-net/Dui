@@ -126,32 +126,76 @@ Serial.println("changeActive");
 	}
 }
 
-void Dui::callback(void (*call)(byte action, char* text),byte action, char* text)
+void Dui::callback(void (*call)(byte action, char* text, byte pos),byte action, char* text, byte pos)
 {
-	call(action, text);
+	call(action, text, pos);
 }
 
 void Dui::edit(byte obj, byte action, byte btn)
 // Gère le contenu d'un champ éditable
+// obj : index du champ éditable
+// action : DUI_EDIT_INIT = initialisation ; DUI_EDIT_BTN = appui sur un  bouton ; DUI_EDIT_EXIT = validation
+// btn : code du bouton appuyé
 {
 Serial.println("edit");
 	char sub=findObject(DUI_FIND_NEXT,obj); // infos complémentaires
-	byte dataLen=strlen(currentPage[obj].text);
-	byte formatLen=strlen(currentPage[sub].text);
-	byte size=dataLen;
-	if(currentPage[sub].out)
-		callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text);
+//	byte dataLen=strlen(currentPage[obj].text);
+//	byte size=dataLen;
 	switch(action)
 	{
 		case DUI_EDIT_INIT :
+			if(currentPage[sub].out)
+				callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text,0);
 			currentPage[obj].type|=DUI_ACTIVE;
-			if(size==formatLen) size--;
+			editPos=strlen(currentPage[obj].text); // Données
+			editSize=strlen(currentPage[sub].text); // Format
+			if(editPos==editSize) editPos--;
 			lcd->setCursor(currentPage[obj].x+size,currentPage[obj].y);
 			lcd->blink();
 			break;
 		case DUI_EDIT_BTN :
+			switch(btn)
+			{
+				DUI_KEY_UP :
+					if(editPos==editSize) break;
+					currentPage[obj].text[editPos]++;
+					break;
+				DUI_KEY_DOWN :
+					if(editPos==editSize) break;
+					currentPage[obj].text[editPos]--;
+					break;
+				DUI_KEY_LEFT :
+					if(editPos>0) editPos--;
+					break;
+				DUI_KEY_RIGHT :
+					if(editPos<editSize) editPos++;
+					break;
+				DUI_KEY_ESC :
+				DUI_KEY_STAR : // Annulation de l'édition en cours
+					currentPage[obj].type&=~DUI_ACTIVE;
+					lcd->noBlink();
+					break;
+				DUI_KEY_OK :
+				DUI_KEY_HASH : // Validation de l'édition en cours
+					if(currentPage[sub].out)
+						callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text,0);
+					currentPage[obj].type&=~DUI_ACTIVE;
+					lcd->noBlink();
+					break;
+				default : // Autres touches [0-9][A-D]
+					if(btn>=' ') currentPage[obj].text[editPos]=btn;
+					if(editPos<editSize) editPos++;
+					break;
+			}
+			lcd->setCursor(currentPage[obj].x+size,currentPage[obj].y);
+			lcd->write(currentPage[obj].text[editPos]);
+			lcd->setCursor(currentPage[obj].x+size,currentPage[obj].y);
+			if(currentPage[sub].out)
+				callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text,editPos);
 			break;
-		case DUI_EDIT_EXIT :
+		case DUI_EDIT_EXIT : // !!! TODO : Ce cas n'a pas à être traité !!!
+			if(currentPage[sub].out)
+				callback((void (*)(byte action, char* text))currentPage[sub].out, action, currentPage[obj].text,0);
 			currentPage[obj].type&=~DUI_ACTIVE;
 			lcd->noBlink();
 			break;
@@ -229,7 +273,12 @@ void Dui::display(byte clearDisplay)
 // Les points d'entrée de DUI
 // --------------------------------------------------------
 
-void Dui::begin(LiquidCrystal* _lcd,byte width,byte height) // Initialiseur
+void Dui::begin(LiquidCrystal* _lcd,byte width,byte height)
+// Initialiseur
+// Doit être appelé depuis la fonction setup
+// _lcd : Pointeur vers l'objet créé pour gérer l'écran LCD
+// width : largeur de l'écran
+// height : hauteur de l'écran
 {
 	lcd=_lcd;
 	lcd->begin(width,height);
@@ -238,7 +287,9 @@ void Dui::begin(LiquidCrystal* _lcd,byte width,byte height) // Initialiseur
 	display(true);
 }
 
-void Dui::doit() // Gestionnaire d'évènements
+void Dui::doit()
+// Gestionnaire d'évènements
+// Doit être appelé depuis la fonction loop
 {
 	byte button=readButtons();
 	if(button)

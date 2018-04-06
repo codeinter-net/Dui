@@ -90,9 +90,13 @@ class Dui
 		void begin(LiquidCrystal* _lcd,byte width,byte height);
 		void doit();
 	private:
+		// --- Variables ---
 		duiDATA* currentPage;
 		LiquidCrystal* lcd;
 		char editData[DUI_MAX_EDIT_SIZE+1]; // Buffer pour l'édition et l'affichage des champs éditables
+		byte editPos; Position en cours d'édition
+		byte editSize; Taille du champ éditable
+		// --- Méthodes internes ---
 		byte readButtons();  // Lecture des boutons
 		void selectDisplay(byte on); // Affiche ou efface le curseur de sélection
 		void changeActive(byte action,byte index); // Change le texte actif d'un bouton
